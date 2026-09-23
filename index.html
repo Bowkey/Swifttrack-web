@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SwiftTrack — Global Shipping</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- Application styles are kept in a separate file for easier maintenance. -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════ -->
+<nav class="navbar" id="mainNav">
+  <div class="logo" onclick="navigate('home')">Swift<span>Track</span></div>
+  <div class="nav-links" id="navLinks">
+    <a onclick="navigate('tracking')">Track</a>
+    <a onclick="navigate('login')">Login</a>
+    <a onclick="navigate('register')" class="btn-nav">Register</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     PAGE: HOME
+════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-container">
+      <div class="hero-content reveal-left">
+        <div class="hero-eyebrow">🌍 Worldwide Delivery Network</div>
+        <h1>Ship Smarter.<br/><span>Track Anywhere.</span></h1>
+        <p>Real-time shipment tracking across 200+ countries. Know exactly where your package is — every step of the way.</p>
+        <div class="track-box">
+          <input type="text" id="homeTrackInput" placeholder="Enter your Tracking ID (e.g. SHIP-A1B2C3D4)"/>
+          <button onclick="homeTrack()">Track Now</button>
+        </div>
+        <p class="track-hint">Try a demo: <strong onclick="demoTrack()">SHIP-DEMO0001</strong></p>
+        
+        <div class="hero-stats reveal">
+          <div class="stat"><span>2.4M+</span><p>Shipments Delivered</p></div>
+          <div class="stat"><span>200+</span><p>Countries Reached</p></div>
+          <div class="stat"><span>99.2%</span><p>On-Time Rate</p></div>
+        </div>
+      </div>
+      <div class="hero-image-wrap reveal-right">
+        <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1000" alt="Shipping Logistics" class="hero-image">
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <h2 class="reveal">Everything you need to <span>ship with confidence</span></h2>
+    <div class="features-grid">
+      <div class="feature-card reveal stagger-item"><div class="feature-icon">📍</div><h3>Real-Time Tracking</h3><p>Live location updates with map visualization and checkpoint timeline for every shipment.</p></div>
+      <div class="feature-card reveal stagger-item"><div class="feature-icon">🔔</div><h3>Instant Notifications</h3><p>Email alerts at every stage — from pickup to delivery confirmation.</p></div>
+      <div class="feature-card reveal stagger-item"><div class="feature-icon">🔒</div><h3>Secure & Verified</h3><p>Encrypted accounts, verified users, and tamper-proof tracking records.</p></div>
+      <div class="feature-card reveal stagger-item"><div class="feature-icon">📦</div><h3>Full Shipment Details</h3><p>Weight, dimensions, origin, destination, and customs documents in one place.</p></div>
+    </div>
+  </section>
+
+  <section class="steps-section">
+    <h2 class="reveal">How It Works</h2>
+    <div class="steps">
+      <div class="step reveal stagger-item"><div class="step-num">01</div><h3>Register</h3><p>Create your account and receive a unique tracking ID instantly.</p></div>
+      <div class="step-arrow reveal stagger-item">→</div>
+      <div class="step reveal stagger-item"><div class="step-num">02</div><h3>Ship</h3><p>Our admin team creates your shipment and activates tracking.</p></div>
+      <div class="step-arrow reveal stagger-item">→</div>
+      <div class="step reveal stagger-item"><div class="step-num">03</div><h3>Track</h3><p>Follow your package in real-time from pickup to delivery.</p></div>
+    </div>
+  </section>
+
+  <section class="services-section">
+    <div class="section-header reveal">
+      <h2>Our <span>Shipping Services</span></h2>
+      <p>Flexible solutions for every delivery need, across every border.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card reveal stagger-item">
+        <div class="service-img">✈️</div>
+        <h3>Air Express</h3>
+        <p>Door-to-door delivery in 2-3 business days for urgent shipments.</p>
+      </div>
+      <div class="service-card reveal stagger-item">
+        <div class="service-img">🚢</div>
+        <h3>Ocean Freight</h3>
+        <p>Cost-effective solutions for large cargo and international trade.</p>
+      </div>
+      <div class="service-card reveal stagger-item">
+        <div class="service-img">🚛</div>
+        <h3>Land Transport</h3>
+        <p>Reliable trucking network for domestic and cross-border logistics.</p>
+      </div>
+      <div class="service-card reveal stagger-item">
+        <div class="service-img">📦</div>
+        <h3>Warehousing</h3>
+        <p>Secure storage and inventory management in strategic locations.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="testimonials-section">
+    <h2 class="reveal">Trusted by <span>Thousands</span></h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal stagger-item">
+        <div class="stars">★★★★★</div>
+        <p>"SwiftTrack has completely changed how we manage our e-commerce logistics. The real-time updates are incredibly accurate."</p>
+        <div class="user-info">
+          <div class="user-avatar">SC</div>
+          <div>
+            <strong>Sarah Chen</strong>
+            <span>Global Retailers Inc.</span>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal stagger-item">
+        <div class="stars">★★★★★</div>
+        <p>"The best tracking interface I've ever used. Simple, fast, and reliable. Highly recommended for international shipping."</p>
+        <div class="user-info">
+          <div class="user-avatar">MR</div>
+          <div>
+            <strong>Marcus Reed</strong>
+            <span>Independent Entrepreneur</span>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal stagger-item">
+        <div class="stars">★★★★★</div>
+        <p>"Excellent customer support and a very robust platform. Our customers love the transparency of the tracking links."</p>
+        <div class="user-info">
+          <div class="user-avatar">EL</div>
+          <div>
+            <strong>Elena Lopez</strong>
+            <span>Logistics Manager</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq-section">
+    <h2 class="reveal">Frequently Asked Questions</h2>
+    <div class="faq-grid">
+      <div class="faq-item reveal stagger-item">
+        <h3>How do I track my shipment?</h3>
+        <p>Simply enter your tracking ID in the search box at the top of the page. You'll get instant access to the current status and location.</p>
+      </div>
+      <div class="faq-item reveal stagger-item">
+        <h3>Is international shipping available?</h3>
+        <p>Yes, we operate in over 200 countries worldwide with a specialized network for customs clearance and local delivery.</p>
+      </div>
+      <div class="faq-item reveal stagger-item">
+        <h3>What if my package is delayed?</h3>
+        <p>Delays can happen due to weather or customs. You'll receive real-time notifications, and our support team is always available to help.</p>
+      </div>
+      <div class="faq-item reveal stagger-item">
+        <h3>How can I create an account?</h3>
+        <p>Click on the 'Register' button in the navigation bar. Once registered, you'll be assigned a permanent tracking ID for all your shipments.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section reveal">
+    <h2>Ready to start shipping?</h2>
+    <p>Join thousands of businesses and individuals who trust SwiftTrack for their global logistics needs.</p>
+    <div style="display:flex; gap:15px; justify-content:center;">
+      <button class="btn-primary" onclick="navigate('register')">Create Free Account</button>
+      <button class="btn-outline" onclick="navigate('tracking')">Track a Package</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="logo">Swift<span>Track</span></div>
+      <p>© 2025 SwiftTrack. All rights reserved.</p>
+      <div class="footer-links">
+        <a onclick="navigate('tracking')">Track Shipment</a>
+        <a onclick="navigate('login')">Login</a>
+        <a onclick="navigate('register')">Register</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: LOGIN
+════════════════════════════════════════ -->
+<div class="page" id="page-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h2>Welcome Back</h2>
+      <p class="auth-sub">Sign in to your SwiftTrack account</p>
+      <div class="error-msg" id="loginErr"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="loginEmail" placeholder="you@example.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"/></div>
+      <button class="btn-primary btn-full" id="loginBtn" onclick="doLogin()">Sign In</button>
+      <div class="auth-divider">or</div>
+      <p class="auth-footer">Don't have an account? <a onclick="navigate('register')">Register here</a></p>
+      <p class="auth-footer" style="margin-top:8px"><a onclick="navigate('tracking')">Track without an account →</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: REGISTER
+════════════════════════════════════════ -->
+<div class="page" id="page-register">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <p class="auth-sub">Join SwiftTrack to manage your shipments</p>
+      <div class="error-msg" id="regErr"></div>
+      <div class="success-msg" id="regSuccess"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input type="text" id="regName" placeholder="John Doe"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="regPhone" placeholder="+1 234 567 8900"/></div>
+      </div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com"/></div>
+      <div class="form-group"><label>Shipping Address</label><input type="text" id="regAddress" placeholder="123 Main St, City, Country"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Password</label><input type="password" id="regPass" placeholder="••••••••"/></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="regPass2" placeholder="••••••••"/></div>
+      </div>
+      <button class="btn-primary btn-full" id="regBtn" onclick="doRegister()">Create Account</button>
+      <p class="auth-footer" style="margin-top:14px">Already have an account? <a onclick="navigate('login')">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: TRACKING
+════════════════════════════════════════ -->
+<div class="page" id="page-tracking">
+  <div class="tracking-wrap">
+    <h2>Track Your Shipment</h2>
+    <div class="track-box" style="margin-bottom:10px">
+      <input type="text" id="trackInput" placeholder="Enter Tracking ID (e.g. SHIP-A1B2C3D4)"/>
+      <button onclick="doTrack()">Track</button>
+    </div>
+    <p class="track-hint" style="margin-bottom:36px">Enter your tracking ID above to see live shipment status.</p>
+
+    <div id="trackResult" style="display:none">
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-pad">
+          <div class="shipment-header">
+            <div>
+              <p class="meta-label">Tracking ID</p>
+              <h3 id="trID">—</h3>
+              <span id="trPkgType" class="pkg-type-badge" style="margin-top:8px;display:none">📦 Parcel</span>
+            </div>
+            <div id="trStatus" class="badge badge-pending">Pending</div>
+          </div>
+
+          <!-- Status Progress -->
+          <div class="status-progress">
+            <div class="status-stages" id="statusStages">
+              <div class="stage" id="stage-Pending"><div class="stage-icon">🕐</div><div class="stage-label">Pending</div></div>
+              <div class="stage-line" id="line-1"></div>
+              <div class="stage" id="stage-In Transit"><div class="stage-icon">🚢</div><div class="stage-label">In Transit</div></div>
+              <div class="stage-line" id="line-2"></div>
+              <div class="stage" id="stage-Out for Delivery"><div class="stage-icon">🚚</div><div class="stage-label">Out for Delivery</div></div>
+              <div class="stage-line" id="line-3"></div>
+              <div class="stage" id="stage-Delivered"><div class="stage-icon">✅</div><div class="stage-label">Delivered</div></div>
+            </div>
+          </div>
+
+          <!-- Countdown -->
+          <div class="countdown-box" id="countdownBox">
+            <div>
+              <p class="countdown-label">Estimated Delivery</p>
+              <p id="trDeliveryDate" style="font-weight:600;margin-bottom:4px">—</p>
+            </div>
+            <div style="text-align:right">
+              <p class="countdown-label">Time Remaining</p>
+              <div class="countdown-timer" id="countdownTimer">—</div>
+            </div>
+          </div>
+
+          <div class="shipment-meta">
+            <div><p class="meta-label">Origin</p><p id="trOrigin">—</p></div>
+            <div><p class="meta-label">Destination</p><p id="trDest">—</p></div>
+            <div><p class="meta-label">Weight</p><p id="trWeight">—</p></div>
+            <div><p class="meta-label">Dimensions</p><p id="trDimensions">—</p></div>
+            <div><p class="meta-label">Package Type</p><p id="trPkgTypeText">—</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="map-box" style="margin-bottom:24px"><div id="map"></div></div>
+      <div class="card">
+        <div class="section-title">Shipment Journey</div>
+        <div class="card-pad"><div id="timeline" class="timeline"></div></div>
+      </div>
+    </div>
+    <div id="trackNotFound" class="not-found" style="display:none">🔍 No shipment found. Please check the tracking ID and try again.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: USER DASHBOARD
+════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <ul>
+        <li class="active" id="dash-tab-shipments"><a onclick="showDashTab('shipments')">📦 My Shipments</a></li>
+        <li id="dash-tab-profile"><a onclick="showDashTab('profile')">👤 Profile</a></li>
+        <li><a onclick="navigate('tracking')">🔍 Track Package</a></li>
+        <li><a onclick="doLogout()">🚪 Logout</a></li>
+      </ul>
+    </aside>
+    <main class="dash-main">
+      <div class="welcome-banner">
+        <div>
+          <h2 id="dashWelcome">Welcome back!</h2>
+          <p>Your Tracking ID: <strong id="dashTrackID">—</strong></p>
+        </div>
+        <button class="btn-primary" onclick="navigate('tracking')">Track My Shipment</button>
+      </div>
+      <div class="dash-stats">
+        <div class="stat-card"><span id="dTotal">0</span><p>Total Shipments</p></div>
+        <div class="stat-card"><span id="dTransit">0</span><p>In Transit</p></div>
+        <div class="stat-card"><span id="dDelivered">0</span><p>Delivered</p></div>
+      </div>
+      <!-- Shipments Tab -->
+      <div id="dashTabShipments">
+        <div class="card">
+          <div class="section-title">My Shipments</div>
+          <div id="dashShipments"><p class="loading-text">Loading shipments…</p></div>
+        </div>
+      </div>
+      <!-- Profile Tab -->
+      <div id="dashTabProfile" style="display:none">
+        <div class="card"><div class="card-pad">
+          <h3 style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:20px;">My Profile</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Full Name</label><input type="text" id="profName"/></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="profPhone"/></div>
+          </div>
+          <div class="form-group"><label>Email</label><input type="email" id="profEmail" disabled/></div>
+          <div class="form-group"><label>Address</label><input type="text" id="profAddress"/></div>
+          <div class="success-msg" id="profSuccess"></div>
+          <button class="btn-primary" style="width:auto" onclick="saveProfile()">Save Changes</button>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: ADMIN DASHBOARD
+════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="logo-text">Swift<span>Track</span></div>
+        <small>Admin Panel</small>
+      </div>
+      <ul class="admin-nav">
+        <li class="active" id="atab-overview"><a onclick="showAdminTab('overview')">📊 Overview</a></li>
+        <li id="atab-users"><a onclick="showAdminTab('users')">👥 Users</a></li>
+        <li id="atab-shipments"><a onclick="showAdminTab('shipments')">📦 Shipments</a></li>
+        <li id="atab-create"><a onclick="showAdminTab('create')">➕ New Shipment</a></li>
+        <li><a onclick="doLogout()">🚪 Logout</a></li>
+      </ul>
+    </aside>
+    <main class="admin-main">
+
+      <!-- Overview Tab -->
+      <div id="adminTabOverview">
+        <div class="admin-header">
+          <div><h1>Dashboard Overview</h1><p id="adminDate"></p></div>
+        </div>
+        <div class="admin-stats">
+          <div class="admin-stat-card"><div class="stat-ico">📦</div><div><span id="aTotal">0</span><p>Total Shipments</p></div></div>
+          <div class="admin-stat-card"><div class="stat-ico">🚚</div><div><span id="aTransit">0</span><p>In Transit</p></div></div>
+          <div class="admin-stat-card"><div class="stat-ico">✅</div><div><span id="aDelivered">0</span><p>Delivered</p></div></div>
+          <div class="admin-stat-card"><div class="stat-ico">👥</div><div><span id="aUsers">0</span><p>Users</p></div></div>
+        </div>
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            Recent Shipments <button class="btn-sm" onclick="showAdminTab('create')">+ New</button>
+          </div>
+          <div id="aRecentShipments"><p class="loading-text">Loading…</p></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            Recent Users <button class="btn-sm" onclick="showAdminTab('users')">View All</button>
+          </div>
+          <div id="aRecentUsers"><p class="loading-text">Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="adminTabUsers" style="display:none">
+        <div class="admin-header">
+          <h1>User Management</h1>
+          <input type="text" class="search-input" id="userSearch" placeholder="Search name or email…" oninput="filterUsers()"/>
+        </div>
+        <div class="card" id="usersTable"><p class="loading-text">Loading users…</p></div>
+      </div>
+
+      <!-- Shipments Tab -->
+      <div id="adminTabShipments" style="display:none">
+        <div class="admin-header">
+          <h1>Shipments</h1>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input type="text" class="search-input" id="shipSearch" placeholder="Search tracking ID…" oninput="filterShipments()"/>
+            <select class="search-input" id="shipStatusFilter" onchange="filterShipments()">
+              <option value="">All Statuses</option>
+              <option>Pending</option><option>In Transit</option>
+              <option>Out for Delivery</option><option>Delivered</option><option>Returned</option>
+            </select>
+            <button class="btn-primary" onclick="showAdminTab('create')">+ New</button>
+          </div>
+        </div>
+        <div class="card" id="shipmentsTable"><p class="loading-text">Loading…</p></div>
+      </div>
+
+      <!-- Create/Edit Shipment Tab -->
+      <div id="adminTabCreate" style="display:none">
+        <div class="admin-header">
+          <h1 id="createTitle">New Shipment</h1>
+        </div>
+        <div class="success-msg" id="createSuccess"></div>
+        <div class="error-msg" id="createErr"></div>
+        <div class="form-card">
+          <h3>Assign to User</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Select User</label>
+              <select id="aUserSelect" onchange="onAdminUserSelect()">
+                <option value="">-- Select a user --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tracking ID</label>
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <input type="text" id="aTrackingID" placeholder="Auto-generate or type"/>
+                <button class="btn-sm" onclick="genID()" style="flex-shrink:0;padding:12px 14px">Generate</button>
+              </div>
+            </div>
+          </div>
+          <hr/>
+          <h3>Shipment Details</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Recipient Name</label><input type="text" id="aRecipName"/></div>
+            <div class="form-group"><label>Recipient Email</label><input type="email" id="aRecipEmail"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Origin</label><input type="text" id="aOrigin" placeholder="e.g. Lagos, Nigeria"/></div>
+            <div class="form-group"><label>Destination</label><input type="text" id="aDest" placeholder="e.g. London, UK"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Weight (kg)</label><input type="number" id="aWeight"/></div>
+            <div class="form-group"><label>Dimensions (L×W×H cm)</label><input type="text" id="aDimensions" placeholder="30×20×15"/></div>
+            <div class="form-group">
+              <label>Package Type</label>
+              <select id="aPkgType">
+                <option value="Parcel">📦 Parcel</option>
+                <option value="Freight">🚛 Freight</option>
+                <option value="Document">📄 Document</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status</label>
+              <select id="aStatus">
+                <option>Pending</option><option>In Transit</option>
+                <option>Out for Delivery</option><option>Delivered</option><option>Returned</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Est. Delivery Date</label><input type="date" id="aDelivery"/></div>
+          </div>
+          <hr/>
+          <h3>Tracking Checkpoints</h3>
+          <div id="checkpoints"></div>
+          <button class="btn-outline" onclick="addCheckpoint()" style="margin-bottom:16px">+ Add Checkpoint</button>
+          <hr/>
+          <button class="btn-primary" id="createBtn" onclick="submitShipment()" style="width:auto">Create Shipment</button>
+          <input type="hidden" id="editShipID"/>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay" id="editUserModal">
+  <div class="modal-box">
+    <h3>Edit User</h3>
+    <input type="hidden" id="editUID"/>
+    <div class="form-group"><label>Full Name</label><input type="text" id="editName"/></div>
+    <div class="form-group"><label>Phone</label><input type="text" id="editPhone"/></div>
+    <div class="form-group"><label>Address</label><input type="text" id="editAddress"/></div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="editStatus"><option value="active">Active</option><option value="suspended">Suspended</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveUser()">Save</button>
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase and application logic are loaded from separate modules. -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
