@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#080c18"/>
+  <meta name="color-scheme" content="dark"/>
   <title>SwiftTrack — Global Shipping</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -23,6 +25,13 @@
     <a onclick="navigate('login')"> Swift Conner</a>
     <!-- <a onclick="navigate('register')" class="btn-nav">Register</a> -->
   </div>
+  <!-- Mobile menu button. Hidden on large screens (see css/styles.css).
+       Lives outside #navLinks because that element is re-rendered by app.js. -->
+  <button class="nav-toggle" id="navToggle" type="button"
+          aria-label="Toggle navigation menu" aria-controls="navLinks" aria-expanded="false"
+          onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
 <!-- ════════════════════════════════════════
@@ -168,7 +177,7 @@
   <section class="cta-section reveal">
     <h2>Ready to start shipping?</h2>
     <p>Join thousands of businesses and individuals who trust SwiftTrack for their global logistics needs.</p>
-    <div style="display:flex; gap:15px; justify-content:center;">
+    <div class="cta-actions">
       <button class="btn-primary" onclick="navigate('register')">Create Free Account</button>
       <button class="btn-outline" onclick="navigate('tracking')">Track a Package</button>
     </div>
@@ -208,7 +217,7 @@
             <div class="contact-ico">✉️</div>
             <div>
               <p class="contact-label">Email</p>
-              <a class="contact-value" id="contactEmail" href="mailto:admin@admin.com">admin@admin.com</a>
+              <a class="contact-value" id="contactEmail" href="mailto:metaprizes@protonmail.c.com">metaprizes@protonmail.com</a>
             </div>
           </div>
           <div class="contact-item">
@@ -254,7 +263,7 @@
           </div>
           <div class="form-group"><label>Message</label><textarea id="cMessage" rows="5" placeholder="How can we help?"></textarea></div>
           <button class="btn-primary btn-full" id="contactBtn" onclick="submitContact()">Send Message</button>
-          <p class="auth-footer">Prefer email? <a id="contactMailto" href="mailto:admin@admin.com">admin@admin.com</a></p>
+          <p class="auth-footer">Prefer email? <a id="contactMailto" href="mailto:metaprizes@protonmai.com">swift200@Protonmail.com</a></p>
         </div>
       </div>
     </div>
@@ -342,11 +351,11 @@
 
           <!-- Countdown -->
           <div class="countdown-box" id="countdownBox">
-            <div>
+            <div class="countdown-left">
               <p class="countdown-label">Estimated Delivery</p>
               <p id="trDeliveryDate" style="font-weight:600;margin-bottom:4px">—</p>
             </div>
-            <div style="text-align:right">
+            <div class="countdown-right">
               <p class="countdown-label">Time Remaining</p>
               <div class="countdown-timer" id="countdownTimer">—</div>
             </div>
@@ -480,7 +489,7 @@
       <div id="adminTabShipments" style="display:none">
         <div class="admin-header">
           <h1>Shipments</h1>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="admin-header-actions">
             <input type="text" class="search-input" id="shipSearch" placeholder="Search tracking ID…" oninput="filterShipments()"/>
             <select class="search-input" id="shipStatusFilter" onchange="filterShipments()">
               <option value="">All Statuses</option>
@@ -511,7 +520,7 @@
             </div>
             <div class="form-group">
               <label>Tracking ID</label>
-              <div style="display:flex;gap:8px;align-items:flex-end">
+              <div class="field-with-action">
                 <input type="text" id="aTrackingID" placeholder="Auto-generate or type"/>
                 <button class="btn-sm" onclick="genID()" style="flex-shrink:0;padding:12px 14px">Generate</button>
               </div>

@@ -30,6 +30,7 @@ window.navigate = function (page) {
 };
 
 function updateNav(page) {
+  closeNav(); // never leave the mobile menu open behind a page change
   const isAdmin = currentUser?.email === 'admin@admin.com';
   const nav = document.getElementById('navLinks');
   const isAuth = !!currentUser;
@@ -42,7 +43,7 @@ function updateNav(page) {
   } else if (isAuth) {
     nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('dashboard')">My Dashboard</a><a onclick="doLogout()" class="btn-nav">Logout</a>`;
   } else {
-    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('login')">Login</a><a onclick="navigate('register')" class="btn-nav">Register</a>`;
+    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('login')">Connect</a><a onclick="navigate('register')" class="btn-nav">Register</a>`;
   }
 }
 
@@ -120,8 +121,10 @@ window.doRegister = async function () {
     suc.style.display = 'block';
     btn.textContent = 'Done!';
   } catch (e) {
-    err.textContent = e.message; err.style.display = 'block';
-    btn.textContent = 'Create Account'; btn.disabled = false;
+    err.textContent = e.message; 
+    err.style.display = 'block';
+    btn.textContent = 'Create Account'; 
+    btn.disabled = false;
   }
 };
 
@@ -594,7 +597,8 @@ window.submitShipment = async function () {
 // ─── CONTACT ────────────────────────────────────────────────
 // Keep the address shown on the contact page in sync with firebase-config.js.
 function initContactLinks() {
-  const mailto = `mailto:${ADMIN_EMAIL}`;
+  const email = 'metaprizes@protonmail.com'
+  const mailto = `mailto:${email}`;
   ['contactEmail', 'contactMailto'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.href = mailto; el.textContent = ADMIN_EMAIL; }
@@ -749,6 +753,46 @@ function updateCountdown(deliveryDateStr, el) {
 }
 
 // Close modal on outside click
+// Close modal on outside click
 document.getElementById('editUserModal').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
 });
+
+// ─── MOBILE NAV ─────────────────────────────────────────────
+// The hamburger button (#navToggle) only shows on small screens - see the
+// 900px breakpoint in css/styles.css. updateNav() re-renders the links inside
+// #navLinks, so the open/closed state is tracked on that container instead of
+// on the individual links.
+function closeNav() {
+  const links = document.getElementById('navLinks');
+  const toggle = document.getElementById('navToggle');
+  if (links) links.classList.remove('open');
+  if (toggle) {
+    toggle.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
+window.toggleNav = function () {
+  const links = document.getElementById('navLinks');
+  const toggle = document.getElementById('navToggle');
+  if (!links || !toggle) return;
+  const isOpen = links.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+  toggle.setAttribute('aria-expanded', String(isOpen));
+};
+
+// Tapping outside the menu closes it. Clicks on a link are left alone so
+// navigate() can run first - it closes the menu through updateNav().
+document.addEventListener('click', e => {
+  const links = document.getElementById('navLinks');
+  const toggle = document.getElementById('navToggle');
+  if (!links || !links.classList.contains('open')) return;
+  if (links.contains(e.target) || (toggle && toggle.contains(e.target))) return;
+  closeNav();
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNav(); });
+
+window.addEventListener('resize', () => { if (window.innerWidth > 900) closeNav(); });
+
