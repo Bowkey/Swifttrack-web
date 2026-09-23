@@ -38,11 +38,11 @@ function updateNav(page) {
   document.getElementById('mainNav').style.display = 'flex';
 
   if (isAdmin) {
-    nav.innerHTML = `<a onclick="navigate('admin')">Admin Panel</a><a onclick="doLogout()">Logout</a>`;
+    nav.innerHTML = `<a onclick="navigate('contact')">Contact</a><a onclick="navigate('admin')">Admin Panel</a><a onclick="doLogout()">Logout</a>`;
   } else if (isAuth) {
-    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('dashboard')">My Dashboard</a><a onclick="doLogout()" class="btn-nav">Logout</a>`;
+    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('dashboard')">My Dashboard</a><a onclick="doLogout()" class="btn-nav">Logout</a>`;
   } else {
-    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('login')">Login</a><a onclick="navigate('register')" class="btn-nav">Register</a>`;
+    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('login')">Login</a><a onclick="navigate('register')" class="btn-nav">Register</a>`;
   }
 }
 
@@ -591,6 +591,79 @@ window.submitShipment = async function () {
 };
 
 // ─── HELPERS ────────────────────────────────────────────────
+// ─── CONTACT ────────────────────────────────────────────────
+// Keep the address shown on the contact page in sync with firebase-config.js.
+function initContactLinks() {
+  const mailto = `mailto:${ADMIN_EMAIL}`;
+  ['contactEmail', 'contactMailto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.href = mailto; el.textContent = ADMIN_EMAIL; }
+  });
+}
+window.addEventListener('DOMContentLoaded', initContactLinks);
+
+window.submitContact = async function () {
+  const btn = document.getElementById('contactBtn');
+  const suc = document.getElementById('contactSuccess');
+  const err = document.getElementById('contactErr');
+  suc.style.display = 'none';
+  err.textContent = '';
+  err.style.display = 'none';
+
+  const get = id => document.getElementById(id).value.trim();
+  const name      = get('cName');
+  const email     = get('cEmail');
+  const trackingID= get('cTracking');
+  const subject   = get('cSubject');
+  const message   = get('cMessage');
+
+  if (!name || !email || !message) {
+    err.textContent = 'Please fill in your name, email address and message.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'Please enter a valid email address.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  try {
+    const ref = doc(collection(db, 'contactMessages'));
+    await setDoc(ref, {
+      id: ref.id,
+      name,
+      email,
+      trackingID: trackingID || null,
+      subject: subject || '(no subject)',
+      message,
+      userUID: currentUser ? currentUser.uid : null,
+      status: 'new',
+      createdAt: serverTimestamp()
+    });
+
+    ['cName', 'cEmail', 'cTracking', 'cSubject', 'cMessage']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    suc.textContent = `Thanks ${name}! Your message has been sent — we'll reply to ${email}.`;
+    suc.style.display = 'block';
+  } catch (e) {
+    // Writing failed (e.g. security rules) — give the visitor a working fallback.
+    err.textContent = `Sorry, your message could not be sent (${e.message}). Please email us directly at `;
+    const link = document.createElement('a');
+    link.href = `mailto:${ADMIN_EMAIL}`;
+    link.textContent = ADMIN_EMAIL;
+    link.style.color = 'inherit';
+    err.appendChild(link);
+    err.style.display = 'block';
+  }
+
+  btn.textContent = 'Send Message';
+  btn.disabled = false;
+};
+
 function revealAll() {
   document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .stagger-item')
     .forEach(el => el.classList.add('active'));
