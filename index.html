@@ -178,7 +178,7 @@
     <h2>Ready to start shipping?</h2>
     <p>Join thousands of businesses and individuals who trust SwiftTrack for their global logistics needs.</p>
     <div class="cta-actions">
-      <button class="btn-primary" onclick="navigate('register')">Create Free Account</button>
+      <button class="btn-primary" ondblclick="navigate('register')">Swift Ways</button>
       <button class="btn-outline" onclick="navigate('tracking')">Track a Package</button>
     </div>
   </section>
@@ -186,12 +186,12 @@
   <footer>
     <div class="footer-inner">
       <div class="logo">Swift<span>Track</span></div>
-      <p>© 2025 SwiftTrack. All rights reserved.</p>
+      <p>© <span id="copy-right-year"></span> SwiftTrack. All rights reserved.</p>
       <div class="footer-links">
         <a onclick="navigate('tracking')">Track Shipment</a>
         <a onclick="navigate('contact')">Contact Us</a>
-        <a onclick="navigate('login')">Login</a>
-        <a onclick="navigate('register')">Register</a>
+        <!-- <a onclick="navigate('login')">Login</a> -->
+        <!-- <a ondblclick="navigate('register')">Register</a> -->
       </div>
     </div>
   </footer>
@@ -217,7 +217,7 @@
             <div class="contact-ico">✉️</div>
             <div>
               <p class="contact-label">Email</p>
-              <a class="contact-value" id="contactEmail" href="mailto:metaprizes@protonmail.c.com">metaprizes@protonmail.com</a>
+              <a class="contact-value" id="contactEmail" href="mailto:metaprizes@protonmail.com">metaprizes@protonmail.com</a>
             </div>
           </div>
           <div class="contact-item">
@@ -263,7 +263,7 @@
           </div>
           <div class="form-group"><label>Message</label><textarea id="cMessage" rows="5" placeholder="How can we help?"></textarea></div>
           <button class="btn-primary btn-full" id="contactBtn" onclick="submitContact()">Send Message</button>
-          <p class="auth-footer">Prefer email? <a id="contactMailto" href="mailto:metaprizes@protonmai.com">swift200@Protonmail.com</a></p>
+          <!-- <p class="auth-footer">Prefer email? <a id="contactMailto" href="mailto:metaprizes@protonmai.com">swift200@Protonmail.com</a></p> -->
         </div>
       </div>
     </div>
@@ -280,7 +280,7 @@
       <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"/></div>
       <button class="btn-primary btn-full" id="loginBtn" onclick="doLogin()">Sign In</button>
       <div class="auth-divider">or</div>
-      <p class="auth-footer">Don't have an account? <a onclick="navigate('register')">Register here</a></p>
+      <!-- <p class="auth-footer">Don't have an account? <a onclick="navigate('register')">Register here</a></p> -->
       <p class="auth-footer" style="margin-top:8px"><a onclick="navigate('tracking')">Track without an account →</a></p>
     </div>
   </div>

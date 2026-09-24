@@ -43,7 +43,7 @@ function updateNav(page) {
   } else if (isAuth) {
     nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('dashboard')">My Dashboard</a><a onclick="doLogout()" class="btn-nav">Logout</a>`;
   } else {
-    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a onclick="navigate('login')">Connect</a><a onclick="navigate('register')" class="btn-nav">Register</a>`;
+    nav.innerHTML = `<a onclick="navigate('tracking')">Track</a><a onclick="navigate('contact')">Contact</a><a ondblclick="navigate('login')">Connect</a><a ondblclick="navigate('register')" class="btn-nav">Swift Ways</a>`;
   }
 }
 
@@ -276,7 +276,7 @@ async function loadDashboard() {
 
   const el = document.getElementById('dashShipments');
   el.innerHTML = list.length === 0
-    ? '<p class="empty-text">No shipments yet. An admin will assign one to you.</p>'
+    ? '<p class="empty-text">No shipments yet. </p>'
     : `<table class="data-table">
         <thead><tr><th>Tracking ID</th><th>Origin</th><th>Destination</th><th>Status</th><th>Est. Delivery</th><th></th></tr></thead>
         <tbody>${list.map(s => `
@@ -601,7 +601,7 @@ function initContactLinks() {
   const mailto = `mailto:${email}`;
   ['contactEmail', 'contactMailto'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.href = mailto; el.textContent = ADMIN_EMAIL; }
+    if (el) { el.href = mailto; el.textContent = email; }
   });
 }
 window.addEventListener('DOMContentLoaded', initContactLinks);

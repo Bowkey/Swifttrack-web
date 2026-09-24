@@ -18,3 +18,8 @@ export const ADMIN_EMAIL = "admin@admin.com";
 const app = initializeApp(FIREBASE_CONFIG);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+
+const year =document.getElementById("copy-right-year");
+
+year.textContent= new Date().getFullYear();

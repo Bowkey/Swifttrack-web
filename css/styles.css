@@ -1,8 +1,8 @@
 :root {
-  --primary: #080c18;
+  --primary: #152246;
   --accent: #00d4ff;
   --accent2: #ff6b35;
-  --surface: #0f1624;
+  --surface: #11254b;
   --surface2: #1a2235;
   --border: #1e2d45;
   --text: #e2e8f0;
@@ -41,14 +41,18 @@ body {
 
 /* ── NAVBAR ── */
 .navbar {
+  width: 95vw;
   display: flex;
+  margin-top: 30px;
+  border-radius: 20px;
+  margin: 0 auto;
   justify-content: space-between;
   align-items: center;
   padding: 18px 48px;
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(8, 12, 24, 0.94);
+  background: rgba(8, 12, 24, 0.247);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
 }
@@ -83,6 +87,7 @@ body {
 
 .nav-links a:hover {
   color: var(--text);
+  font-weight: bolder;
 }
 
 .btn-nav {
@@ -98,6 +103,7 @@ body {
 .nav-toggle {
   display: none;
   flex-direction: column;
+  
   justify-content: center;
   gap: 5px;
   width: 44px;
@@ -2350,4 +2356,8 @@ footer {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+button:active{
+  background-color: #64748b;
 }
