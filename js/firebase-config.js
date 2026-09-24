@@ -15,11 +15,26 @@ const FIREBASE_CONFIG = {
 
 export const ADMIN_EMAIL = "admin@admin.com";
 
+// Accounts allowed into the admin panel. This is the single source of truth
+// for "is this user an admin?". app.js used to hard-code a different address
+// in its own admin checks, which let the admin panel open without its data
+// ever being loaded.
+export const ADMIN_EMAILS = [
+  ADMIN_EMAIL,
+  "nimissolomon@gmail.com"
+].map(email => email.toLowerCase());
+
+export function isAdminEmail(email) {
+  return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
 const app = initializeApp(FIREBASE_CONFIG);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 
-const year =document.getElementById("copy-right-year");
+const year = document.getElementById("copy-right-year");
 
-year.textContent= new Date().getFullYear();
+// The footer year is cosmetic - never let a missing element throw here.
+// app.js imports this module, so a throw would stop the whole site dead.
+if (year) year.textContent = new Date().getFullYear();

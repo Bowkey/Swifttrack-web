@@ -1,10 +1,10 @@
-import { auth, db, ADMIN_EMAIL } from "./firebase-config.js";
+import { auth, db, ADMIN_EMAIL, isAdminEmail } from "./firebase-config.js";
 import {
   onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, getDocsFromServer,
   collection, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -27,11 +27,14 @@ window.navigate = function (page) {
   const el = document.getElementById(`page-${page}`);
   if (el) { el.classList.add('active'); window.scrollTo(0, 0); }
   updateNav(page);
+  // The admin panel is also reachable straight from the nav link, so its data
+  // must be loaded here too - not only by the post-login redirect.
+  if (page === 'admin' && isAdminEmail(currentUser?.email)) loadAdmin();
 };
 
 function updateNav(page) {
   closeNav(); // never leave the mobile menu open behind a page change
-  const isAdmin = currentUser?.email === 'admin@admin.com';
+  const isAdmin = isAdminEmail(currentUser?.email);
   const nav = document.getElementById('navLinks');
   const isAuth = !!currentUser;
 
@@ -52,13 +55,20 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   if (user) {
     const snap = await getDoc(doc(db, 'users', user.uid));
-    if (snap.exists()) currentUserData = snap.data();
-    if (user.email === 'nimissolomon@gmail.com') {
-      navigate('admin'); loadAdmin();
+    currentUserData = snap.exists() ? snap.data() : null;
+
+    // Must use the same admin check as updateNav(): when the two disagreed the
+    // panel could be opened without loadAdmin() ever running, which left the
+    // Users and Shipments tabs permanently empty.
+    if (isAdminEmail(user.email)) {
+      navigate('admin');
+      await loadAdmin();
     } else {
-      navigate('dashboard'); loadDashboard();
+      navigate('dashboard');
+      await loadDashboard();
     }
   } else {
+    currentUserData = null;
     navigate('home');
   }
 });
@@ -316,90 +326,219 @@ window.saveProfile = async function () {
 
 // ─── ADMIN ──────────────────────────────────────────────────
 async function loadAdmin() {
-  document.getElementById('adminDate').textContent = new Date().toDateString();
-  await refreshAdminData();
-  renderAdminOverview();
+  const dateEl = document.getElementById('adminDate');
+  if (dateEl) dateEl.textContent = new Date().toDateString();
+  await loadAdminTabData('overview');
 }
 
+// The admin panel must show what is really in Firestore. Plain getDocs()
+// silently resolves from the (usually empty) local cache whenever the browser
+// has not reached the server yet, which is what made the Users and Shipments
+// tabs look like they never fetched anything. Ask the server first and only
+// fall back to the cache when the device genuinely cannot connect.
+async function readCollection(name) {
+  try {
+    const snap = await getDocsFromServer(collection(db, name));
+    return { rows: snap.docs.map(d => ({ id: d.id, ...d.data() })) };
+  } catch (serverError) {
+    const snap = await getDocs(collection(db, name));
+    return { rows: snap.docs.map(d => ({ id: d.id, ...d.data() })), offline: true, reason: readErrorMessage(serverError) };
+  }
+}
+
+// Reads both collections for the admin panel. Promise.allSettled is used on
+// purpose: if one collection is unreadable (e.g. security rules) the other must
+// still render, and a failed read must never wipe data already on screen.
+// Returns { errors, stale } - errors are reads that produced nothing at all,
+// stale are reads served from the offline cache.
 async function refreshAdminData() {
-  const [shipSnap, userSnap] = await Promise.all([getDocs(collection(db, 'shipments')), getDocs(collection(db, 'users'))]);
-  allShipments = shipSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  allUsers = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const [shipRes, userRes] = await Promise.allSettled([
+    readCollection('shipments'),
+    readCollection('users')
+  ]);
+
+  const errors = [];
+  const stale = [];
+
+  if (shipRes.status === 'fulfilled') {
+    allShipments = shipRes.value.rows;
+    if (shipRes.value.offline) stale.push({ name: 'shipments', message: shipRes.value.reason });
+  } else {
+    errors.push({ name: 'shipments', message: readErrorMessage(shipRes.reason) });
+  }
+
+  if (userRes.status === 'fulfilled') {
+    allUsers = userRes.value.rows;
+    if (userRes.value.offline) stale.push({ name: 'users', message: userRes.value.reason });
+  } else {
+    errors.push({ name: 'users', message: readErrorMessage(userRes.reason) });
+  }
 
   // Populate user dropdown
   const sel = document.getElementById('aUserSelect');
-  sel.innerHTML = '<option value="">-- Select a user --</option>';
-  allUsers.forEach(u => {
-    const opt = document.createElement('option');
-    opt.value = u.uid; opt.textContent = `${u.fullName} (${u.email})`;
-    opt.dataset.name = u.fullName; opt.dataset.email = u.email; opt.dataset.tid = u.trackingID || '';
-    sel.appendChild(opt);
-  });
+  if (sel) {
+    sel.innerHTML = '<option value="">-- Select a user --</option>';
+    allUsers.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.uid; opt.textContent = `${u.fullName} (${u.email})`;
+      opt.dataset.name = u.fullName; opt.dataset.email = u.email; opt.dataset.tid = u.trackingID || '';
+      sel.appendChild(opt);
+    });
+  }
+
+  return { errors, stale };
 }
 
-function renderAdminOverview() {
+function readErrorMessage(e) {
+  return (e && (e.message || e.code)) || 'unknown error';
+}
+
+// Every tap on Overview / Users / Shipments re-reads Firestore and re-renders,
+// so a table can never be left showing stale - or empty - state just because
+// the first load happened somewhere else.
+let adminLoadToken = 0;
+
+async function loadAdminTabData(tab) {
+  const token = ++adminLoadToken;
+
+  if (tab === 'overview') {
+    setAdminMessage('aRecentShipments', 'Loading…');
+    setAdminMessage('aRecentUsers', 'Loading…');
+  }
+  if (tab === 'users') setAdminMessage('usersTable', 'Loading users…');
+  if (tab === 'shipments') setAdminMessage('shipmentsTable', 'Loading shipments…');
+
+  const { errors, stale } = await refreshAdminData();
+
+  // A newer load started while this one was in flight - let that one render, so
+  // fast tab switching can never paint an out-of-date table.
+  if (token !== adminLoadToken) return;
+
+  renderAdminOverview(errors, stale);
+
+  // Never leave the user staring at an empty table when the read itself failed.
+  const target = tab === 'users' ? 'usersTable' : tab === 'shipments' ? 'shipmentsTable' : null;
+  const failed = errors.find(e => e.name === tab);
+  const offline = stale.some(s => s.name === tab);
+  const notice = offline ? adminOfflineHtml(tab) : '';
+
+  if (target && failed) setAdminMessage(target, adminErrorHtml(failed.name, failed.message), '');
+  else if (tab === 'users') renderUsersTable(allUsers, notice);
+  else if (tab === 'shipments') renderShipmentsTable(allShipments, notice);
+}
+
+function setAdminMessage(containerId, html, className = 'loading-text') {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = className ? `<p class="${className}">${html}</p>` : html;
+}
+
+function adminErrorHtml(name, message) {
+  return `<p class="error-msg" style="display:block">Couldn't load ${esc(name)} from Firestore: ${esc(message)}</p>`;
+}
+
+function adminOfflineHtml(name) {
+  return `<p class="error-msg" style="display:block">Couldn't reach Firestore, so the last synced ${esc(name)} are shown below. Check your connection and tap the tab again to refresh.</p>`;
+}
+
+// For values rendered as HTML text.
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// For values rendered inside a single-quoted inline handler argument, e.g.
+// onclick="editShipment('SHIP-1')". The backslash-escaped quote survives HTML
+// decoding, so names such as O'Brien no longer break the row buttons.
+function jsArg(v) {
+  return String(v ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderAdminOverview(errors = [], stale = []) {
+  const shipErr = errors.find(e => e.name === 'shipments');
+  const userErr = errors.find(e => e.name === 'users');
+  const shipOffline = stale.some(s => s.name === 'shipments') ? adminOfflineHtml('shipments') : '';
+  const userOffline = stale.some(s => s.name === 'users') ? adminOfflineHtml('users') : '';
+
   document.getElementById('aTotal').textContent = allShipments.length;
   document.getElementById('aTransit').textContent = allShipments.filter(s => s.status === 'In Transit').length;
   document.getElementById('aDelivered').textContent = allShipments.filter(s => s.status === 'Delivered').length;
   document.getElementById('aUsers').textContent = allUsers.length;
 
   const recent5ship = allShipments.slice(-5).reverse();
-  document.getElementById('aRecentShipments').innerHTML = recent5ship.length === 0
-    ? '<p class="empty-text">No shipments yet.</p>'
-    : `<table class="data-table">
+  document.getElementById('aRecentShipments').innerHTML = shipErr
+    ? adminErrorHtml('shipments', shipErr.message)
+    : shipOffline + (recent5ship.length === 0
+      ? '<p class="empty-text">No shipments yet.</p>'
+      : `<table class="data-table">
         <thead><tr><th>Tracking ID</th><th>Recipient</th><th>Origin</th><th>Destination</th><th>Status</th><th></th></tr></thead>
         <tbody>${recent5ship.map(s => `
           <tr>
-            <td><strong>${s.trackingID}</strong></td>
-            <td>${s.recipientName || '—'}</td>
-            <td>${s.origin || '—'}</td><td>${s.destination || '—'}</td>
-            <td><span class="badge ${statusBadgeClass(s.status)}">${s.status || '—'}</span></td>
-            <td><button class="btn-sm" onclick="editShipment('${s.id}')">Edit</button></td>
+            <td><strong>${esc(s.trackingID)}</strong></td>
+            <td>${esc(s.recipientName || '—')}</td>
+            <td>${esc(s.origin || '—')}</td><td>${esc(s.destination || '—')}</td>
+            <td><span class="badge ${statusBadgeClass(s.status)}">${esc(s.status || '—')}</span></td>
+            <td><button class="btn-sm" onclick="editShipment('${jsArg(s.id)}')">Edit</button></td>
           </tr>`).join('')}
-        </tbody></table>`;
+        </tbody></table>`);
 
   const recent5user = allUsers.slice(-5).reverse();
-  document.getElementById('aRecentUsers').innerHTML = recent5user.length === 0
-    ? '<p class="empty-text">No users yet.</p>'
-    : `<table class="data-table">
+  document.getElementById('aRecentUsers').innerHTML = userErr
+    ? adminErrorHtml('users', userErr.message)
+    : userOffline + (recent5user.length === 0
+      ? '<p class="empty-text">No users yet.</p>'
+      : `<table class="data-table">
         <thead><tr><th>Name</th><th>Email</th><th>Tracking ID</th><th>Status</th><th></th></tr></thead>
         <tbody>${recent5user.map(u => `
           <tr>
-            <td>${u.fullName || '—'}</td><td>${u.email || '—'}</td>
-            <td><strong>${u.trackingID || '—'}</strong></td>
-            <td><span class="badge ${u.status === 'suspended' ? 'badge-suspended' : 'badge-active'}">${u.status || 'active'}</span></td>
-            <td><button class="btn-sm" onclick="openEditUser('${u.uid}','${u.fullName}','${u.phone || ''}','${u.address || ''}','${u.status || 'active'}')">Edit</button></td>
+            <td>${esc(u.fullName || '—')}</td><td>${esc(u.email || '—')}</td>
+            <td><strong>${esc(u.trackingID || '—')}</strong></td>
+            <td><span class="badge ${u.status === 'suspended' ? 'badge-suspended' : 'badge-active'}">${esc(u.status || 'active')}</span></td>
+            <td><button class="btn-sm" onclick="openEditUser('${jsArg(u.uid)}','${jsArg(u.fullName || '')}','${jsArg(u.phone || '')}','${jsArg(u.address || '')}','${jsArg(u.status || 'active')}')">Edit</button></td>
           </tr>`).join('')}
-        </tbody></table>`;
+        </tbody></table>`);
 }
 
-window.showAdminTab = function (tab) {
+window.showAdminTab = async function (tab) {
   ['overview', 'users', 'shipments', 'create'].forEach(t => {
-    document.getElementById(`adminTab${t.charAt(0).toUpperCase() + t.slice(1)}`).style.display = t === tab ? 'block' : 'none';
+    const panel = document.getElementById(`adminTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
     document.getElementById(`atab-${t}`)?.classList.toggle('active', t === tab);
   });
-  if (tab === 'users') renderUsersTable(allUsers);
-  if (tab === 'shipments') renderShipmentsTable(allShipments);
-  if (tab === 'create') resetCreateForm();
+
+  // Everything above runs synchronously, so callers such as editShipment() can
+  // keep filling the form in immediately after this call.
+  if (tab === 'create') { resetCreateForm(); return; }
+
+  // Users / Shipments / Overview all re-read Firestore on tap.
+  await loadAdminTabData(tab);
 };
 
 // Users table
-function renderUsersTable(list) {
-  document.getElementById('usersTable').innerHTML = list.length === 0
+function renderUsersTable(list, notice = '') {
+  const table = list.length === 0
     ? '<p class="empty-text">No users found.</p>'
     : `<table class="data-table">
         <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tracking ID</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>${list.map(u => `
           <tr>
-            <td>${u.fullName || '—'}</td><td>${u.email || '—'}</td><td>${u.phone || '—'}</td>
-            <td><strong>${u.trackingID || '—'}</strong></td>
-            <td><span class="badge ${u.status === 'suspended' ? 'badge-suspended' : 'badge-active'}">${u.status || 'active'}</span></td>
+            <td>${esc(u.fullName || '—')}</td><td>${esc(u.email || '—')}</td><td>${esc(u.phone || '—')}</td>
+            <td><strong>${esc(u.trackingID || '—')}</strong></td>
+            <td><span class="badge ${u.status === 'suspended' ? 'badge-suspended' : 'badge-active'}">${esc(u.status || 'active')}</span></td>
             <td style="display:flex;gap:6px">
-              <button class="btn-sm" onclick="openEditUser('${u.uid}','${(u.fullName || '').replace(/'/g, "\\'")}','${u.phone || ''}','${(u.address || '').replace(/'/g, "\\'")}','${u.status || 'active'}')">Edit</button>
-              <button class="btn-sm btn-danger" onclick="suspendUser('${u.uid}')">Suspend</button>
+              <button class="btn-sm" onclick="openEditUser('${jsArg(u.uid)}','${jsArg(u.fullName || '')}','${jsArg(u.phone || '')}','${jsArg(u.address || '')}','${jsArg(u.status || 'active')}')">Edit</button>
+              <button class="btn-sm btn-danger" onclick="suspendUser('${jsArg(u.uid)}')">Suspend</button>
             </td>
           </tr>`).join('')}
         </tbody></table>`;
+
+  const el = document.getElementById('usersTable');
+  if (el) el.innerHTML = notice + table;
 }
 
 window.filterUsers = function () {
@@ -427,36 +566,37 @@ window.saveUser = async function () {
     status: document.getElementById('editStatus').value
   });
   closeModal();
-  await refreshAdminData();
-  renderUsersTable(allUsers);
+  await loadAdminTabData('users');
 };
 
 window.suspendUser = async function (uid) {
   if (!confirm('Suspend this user?')) return;
   await updateDoc(doc(db, 'users', uid), { status: 'suspended' });
-  await refreshAdminData();
-  renderUsersTable(allUsers);
+  await loadAdminTabData('users');
 };
 
 // Shipments table
-function renderShipmentsTable(list) {
-  document.getElementById('shipmentsTable').innerHTML = list.length === 0
+function renderShipmentsTable(list, notice = '') {
+  const table = list.length === 0
     ? '<p class="empty-text">No shipments found.</p>'
     : `<table class="data-table">
         <thead><tr><th>Tracking ID</th><th>Recipient</th><th>Origin</th><th>Destination</th><th>Status</th><th>Est. Delivery</th><th>Actions</th></tr></thead>
         <tbody>${list.map(s => `
           <tr>
-            <td><strong>${s.trackingID}</strong></td>
-            <td>${s.recipientName || '—'}</td>
-            <td>${s.origin || '—'}</td><td>${s.destination || '—'}</td>
-            <td><span class="badge ${statusBadgeClass(s.status)}">${s.status || '—'}</span></td>
-            <td>${s.estimatedDelivery || '—'}</td>
+            <td><strong>${esc(s.trackingID)}</strong></td>
+            <td>${esc(s.recipientName || '—')}</td>
+            <td>${esc(s.origin || '—')}</td><td>${esc(s.destination || '—')}</td>
+            <td><span class="badge ${statusBadgeClass(s.status)}">${esc(s.status || '—')}</span></td>
+            <td>${esc(s.estimatedDelivery || '—')}</td>
             <td style="display:flex;gap:6px">
-              <button class="btn-sm" onclick="editShipment('${s.id}')">Edit</button>
-              <button class="btn-sm btn-danger" onclick="deleteShipment('${s.id}')">Delete</button>
+              <button class="btn-sm" onclick="editShipment('${jsArg(s.id)}')">Edit</button>
+              <button class="btn-sm btn-danger" onclick="deleteShipment('${jsArg(s.id)}')">Delete</button>
             </td>
           </tr>`).join('')}
         </tbody></table>`;
+
+  const el = document.getElementById('shipmentsTable');
+  if (el) el.innerHTML = notice + table;
 }
 
 window.filterShipments = function () {
@@ -470,8 +610,7 @@ window.filterShipments = function () {
 window.deleteShipment = async function (id) {
   if (!confirm('Delete this shipment? This cannot be undone.')) return;
   await deleteDoc(doc(db, 'shipments', id));
-  await refreshAdminData();
-  renderShipmentsTable(allShipments);
+  await loadAdminTabData('shipments');
 };
 
 // Create / edit shipment
@@ -583,8 +722,8 @@ window.submitShipment = async function () {
       suc.textContent = `Shipment created! Tracking ID: ${tid}`;
     }
     suc.style.display = 'block';
-    await refreshAdminData();
-    renderAdminOverview();
+    const { errors, stale } = await refreshAdminData();
+    renderAdminOverview(errors, stale);
   } catch (e) {
     err.textContent = e.message; err.style.display = 'block';
   }
